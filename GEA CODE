@@ -1,0 +1,26 @@
+import numpy as np
+
+np.random.seed(0)
+
+group1 = np.random.normal(loc=5, scale=1, size=(10, 100))
+group2 = np.random.normal(loc=5.2, scale=1, size=(10, 100))
+
+def manual_ttest(x, y):
+    n1 = len(x)
+    n2 = len(y)
+    mean1 = np.mean(x)
+    mean2 = np.mean(y)
+    var1 = np.var(x, ddof=1)
+    var2 = np.var(y, ddof=1)
+    pooled_std = np.sqrt(((n1-1)*var1 + (n2-1)*var2) / (n1 + n2 - 2))
+    t_stat = (mean1 - mean2) / (pooled_std * np.sqrt(1/n1 + 1/n2))
+    return t_stat
+
+significant_genes = []
+for gene_idx in range(group1.shape[1]):
+    t_val = manual_ttest(group1[:, gene_idx], group2[:, gene_idx])
+    if abs(t_val) > 2:
+        significant_genes.append(gene_idx)
+
+print("Significant genes (indices):", significant_genes)
+print("Number of significant genes:", len(significant_genes))
