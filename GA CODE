@@ -1,0 +1,75 @@
+import random
+
+jobs = [2, 5, 1, 7, 3, 4]
+
+POPULATION_SIZE = 10
+GENERATIONS = 50
+MUTATION_RATE = 0.1
+
+def fitness(schedule):
+    completion_time = 0
+    total_completion = 0
+    for job in schedule:
+        completion_time += job
+        total_completion += completion_time
+    return total_completion
+
+def generate_population():
+    population = []
+    for _ in range(POPULATION_SIZE):
+        individual = jobs[:]
+        random.shuffle(individual)
+        population.append(individual)
+    return population
+
+def selection(population):
+    tournament_size = 3
+    selected = []
+    for _ in range(POPULATION_SIZE):
+        tournament = random.sample(population, tournament_size)
+        tournament.sort(key=fitness)
+        selected.append(tournament[0])
+    return selected
+
+def crossover(parent1, parent2):
+    size = len(parent1)
+    child = [None]*size
+    start, end = sorted(random.sample(range(size), 2))
+    child[start:end+1] = parent1[start:end+1]
+    pointer = 0
+    for i in range(size):
+        if child[i] is None:
+            while parent2[pointer] in child:
+                pointer += 1
+            child[i] = parent2[pointer]
+    return child
+
+def mutate(individual):
+    if random.random() < MUTATION_RATE:
+        i, j = random.sample(range(len(individual)), 2)
+        individual[i], individual[j] = individual[j], individual[i]
+    return individual
+
+def genetic_algorithm():
+    population = generate_population()
+    for generation in range(GENERATIONS):
+        population = selection(population)
+        next_gen = []
+        for i in range(0, POPULATION_SIZE, 2):
+            parent1 = population[i]
+            parent2 = population[(i+1) % POPULATION_SIZE]
+            child1 = crossover(parent1, parent2)
+            child2 = crossover(parent2, parent1)
+            child1 = mutate(child1)
+            child2 = mutate(child2)
+            next_gen.extend([child1, child2])
+        population = next_gen
+        if generation % 10 == 0 or generation == GENERATIONS - 1:
+            best = min(population, key=fitness)
+            print(f"Generation {generation}: Best fitness = {fitness(best)} Schedule = {best}")
+    best_solution = min(population, key=fitness)
+    return best_solution, fitness(best_solution)
+
+best_schedule, best_fitness = genetic_algorithm()
+print("\nBest schedule found:", best_schedule)
+print("Best total completion time:", best_fitness)
