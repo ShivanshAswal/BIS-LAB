@@ -1,0 +1,49 @@
+import numpy as np
+import math
+
+def rastrigin(x):
+    A = 10
+    return A * len(x) + sum(xi**2 - A * math.cos(2 * math.pi * xi) for xi in x)
+
+def levy_flight(beta, dim):
+    sigma_u = (math.gamma(1 + beta) * math.sin(math.pi * beta / 2) /
+               (math.gamma((1 + beta) / 2) * beta * 2 ** ((beta - 1) / 2))) ** (1 / beta)
+    u = np.random.randn(dim) * sigma_u
+    v = np.random.randn(dim)
+    step = u / (np.abs(v) ** (1 / beta))
+    return step
+
+def cuckoo_search(obj_func, dim, n=15, pa=0.25, iter=500):
+    nests = np.random.uniform(-5, 5, (n, dim))
+    fitness = np.array([obj_func(nest) for nest in nests])
+    best_idx = np.argmin(fitness)
+    best_nest = nests[best_idx].copy()
+    best_fit = fitness[best_idx]
+
+    for _ in range(iter):
+        for i in range(n):
+            step = levy_flight(1.5, dim)
+            new_nest = nests[i] + 0.01 * step
+            new_nest = np.clip(new_nest, -5, 5)
+            fnew = obj_func(new_nest)
+            if fnew < fitness[i]:
+                nests[i] = new_nest
+                fitness[i] = fnew
+                if fnew < best_fit:
+                    best_fit = fnew
+                    best_nest = new_nest.copy()
+
+        abandon = np.random.rand(n) < pa
+        nests[abandon] = np.random.uniform(-5, 5, (np.sum(abandon), dim))
+        fitness[abandon] = [obj_func(nest) for nest in nests[abandon]]
+
+        curr_best_idx = np.argmin(fitness)
+        if fitness[curr_best_idx] < best_fit:
+            best_fit = fitness[curr_best_idx]
+            best_nest = nests[curr_best_idx].copy()
+
+    return best_nest, best_fit
+
+pos, val = cuckoo_search(rastrigin, dim=2)
+print("Best position (solution vector):", pos)
+print("Best objective function value (minimum found):", val)
