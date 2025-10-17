@@ -1,0 +1,60 @@
+import numpy as np
+
+np.random.seed(42)
+
+jobs = [2, 4, 6, 8, 3]
+
+class Particle:
+    def __init__(self, n_jobs):
+        self.position = np.random.permutation(n_jobs)
+        self.best_position = self.position.copy()
+        self.best_fitness = float('inf')
+        self.velocity = []
+
+def fitness(position):
+    completion_time = 0
+    total_time = 0
+    for job_index in position:
+        total_time += jobs[job_index]
+        completion_time += total_time
+    return completion_time
+
+def update_velocity(particle, global_best, w=0.5, c1=1, c2=1):
+    new_velocity = []
+    for i in range(len(particle.position)):
+        r1, r2 = np.random.rand(2)
+        if particle.position[i] != particle.best_position[i] and r1 < 0.5:
+            new_velocity.append(particle.best_position[i])
+        elif particle.position[i] != global_best[i] and r2 < 0.5:
+            new_velocity.append(global_best[i])
+    particle.velocity = new_velocity
+
+def apply_velocity(particle):
+    for v in particle.velocity:
+        idx1 = np.where(particle.position == v)[0][0]
+        idx2 = np.where(particle.best_position == v)[0][0]
+        particle.position[idx1], particle.position[idx2] = particle.position[idx2], particle.position[idx1]
+    particle.velocity = []
+
+def pso_job_scheduling(n_jobs, n_particles=10, iterations=50):
+    particles = [Particle(n_jobs) for _ in range(n_particles)]
+    global_best_position = None
+    global_best_fitness = float('inf')
+
+    for _ in range(iterations):
+        for particle in particles:
+            fit = fitness(particle.position)
+            if fit < particle.best_fitness:
+                particle.best_fitness = fit
+                particle.best_position = particle.position.copy()
+            if fit < global_best_fitness:
+                global_best_fitness = fit
+                global_best_position = particle.position.copy()
+        for particle in particles:
+            update_velocity(particle, global_best_position)
+            apply_velocity(particle)
+    return global_best_position, global_best_fitness
+
+best_schedule, best_makespan = pso_job_scheduling(len(jobs))
+print("Best job order (indices):", best_schedule)
+print("Best total completion time:", best_makespan)
